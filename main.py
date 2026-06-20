@@ -12,11 +12,24 @@ TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+
+ANONYMOUS_ADMIN_ID = 1087968824
+TELEGRAM_SERVICE_ID = 777000
+
 async def is_admin(message: types.Message) -> bool:
+
     if message.sender_chat and message.sender_chat.id == message.chat.id:
         return True
-    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-    return member.status in [ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR]
+
+
+    if message.from_user and message.from_user.id in [ANONYMOUS_ADMIN_ID, TELEGRAM_SERVICE_ID]:
+        return True
+
+    try:
+        member = await bot.get_chat_member(message.chat.id, message.from_user.id)
+        return member.status in [ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR]
+    except Exception:
+        return False
 
 @dp.message(Command("allow"))
 async def add_exception(message: types.Message):
@@ -70,6 +83,10 @@ async def list_exceptions(message: types.Message):
 async def handle_bot_messages(message: types.Message):
     me = await bot.get_me()
     if message.from_user.id == me.id:
+        return
+
+
+    if message.from_user.id in [ANONYMOUS_ADMIN_ID, TELEGRAM_SERVICE_ID]:
         return
 
     bot_username = message.from_user.username.lower() if message.from_user.username else ""
